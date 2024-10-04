@@ -1,22 +1,24 @@
+import gleam/bytes_builder.{type BytesBuilder}
+import gleam/dynamic.{type Dynamic}
 import gleam/http
+import gleam/http/request
+import gleam/http/response
+import gleam/option.{type Option, None, Some}
 import gleam/result
-import gleam/option.{None, Option, Some}
-import gleam/dynamic.{Dynamic}
-import gleam/bit_builder.{BitBuilder}
 
-pub external type Conn
+pub type Conn
 
-pub external fn port(Conn) -> Int =
-  "Elixir.GleamPlug" "port"
+@external(erlang, "Elixir.GleamPlug", "port")
+pub fn port(conn: Conn) -> Int
 
-pub external fn host(Conn) -> String =
-  "Elixir.GleamPlug" "host"
+@external(erlang, "Elixir.GleamPlug", "host")
+pub fn host(conn: Conn) -> String
 
-pub external fn scheme(Conn) -> http.Scheme =
-  "Elixir.GleamPlug" "scheme"
+@external(erlang, "Elixir.GleamPlug", "scheme")
+pub fn scheme(conn: Conn) -> http.Scheme
 
-external fn elixir_method(Conn) -> Dynamic =
-  "Elixir.GleamPlug" "method"
+@external(erlang, "Elixir.GleamPlug", "method")
+fn elixir_method(conn: Conn) -> Dynamic
 
 pub fn method(conn: Conn) -> http.Method {
   conn
@@ -25,14 +27,14 @@ pub fn method(conn: Conn) -> http.Method {
   |> result.unwrap(http.Get)
 }
 
-pub external fn request_path(Conn) -> String =
-  "Elixir.GleamPlug" "request_path"
+@external(erlang, "Elixir.GleamPlug", "request_path")
+pub fn request_path(conn: Conn) -> String
 
-pub external fn req_headers(Conn) -> List(http.Header) =
-  "Elixir.GleamPlug" "req_headers"
+@external(erlang, "Elixir.GleamPlug", "req_headers")
+pub fn req_headers(conn: Conn) -> List(http.Header)
 
-external fn elixir_query_string(Conn) -> String =
-  "Elixir.GleamPlug" "query_string"
+@external(erlang, "Elixir.GleamPlug", "query_string")
+fn elixir_query_string(conn: Conn) -> String
 
 pub fn query_string(conn: Conn) -> Option(String) {
   case elixir_query_string(conn) {
@@ -49,8 +51,8 @@ pub fn query_string(conn: Conn) -> Option(String) {
 /// the body directly from the conn, instead it must be given as the
 /// second argument.
 ///
-pub fn conn_to_request(conn: Conn, body: a) -> http.Request(a) {
-  http.Request(
+pub fn conn_to_request(conn: Conn, body: a) -> request.Request(a) {
+  request.Request(
     body: body,
     headers: req_headers(conn),
     host: host(conn),
@@ -62,11 +64,11 @@ pub fn conn_to_request(conn: Conn, body: a) -> http.Request(a) {
   )
 }
 
-external fn send_resp(conn: Conn, status: Int, body: BitBuilder) -> Conn =
-  "Elixir.Plug.Conn" "send_resp"
+@external(erlang, "Elixir.Plug.Conn", "send_resp")
+fn send_resp(conn: Conn, status: Int, body: BytesBuilder) -> Conn
 
-external fn merge_resp_headers(conn: Conn, headers: List(http.Header)) -> Conn =
-  "Elixir.Plug.Conn" "merge_resp_headers"
+@external(erlang, "Elixir.Plug.Conn", "merge_resp_headers")
+fn merge_resp_headers(conn: Conn, headers: List(http.Header)) -> Conn
 
 /// Send a Gleam HTTP response over the Plug connection.
 ///
@@ -74,7 +76,7 @@ external fn merge_resp_headers(conn: Conn, headers: List(http.Header)) -> Conn =
 /// plugs try to send another response, it will error out. Use the `halt`
 /// function after this function if you want to halt the plug pipeline.
 ///
-pub fn send(response: http.Response(BitBuilder), conn: Conn) -> Conn {
+pub fn send(response: response.Response(BytesBuilder), conn: Conn) -> Conn {
   conn
   |> merge_resp_headers(response.headers)
   |> send_resp(response.status, response.body)
@@ -84,5 +86,5 @@ pub fn send(response: http.Response(BitBuilder), conn: Conn) -> Conn {
 /// invoked. See the docs for Plug.Builder for more information on halting a
 /// Plug pipeline.
 ///
-pub external fn halt(Conn) -> Conn =
-  "Elixir.Plug.Conn" "halt"
+@external(erlang, "Elixir.Plug.Conn", "halt")
+pub fn halt(conn: Conn) -> Conn
