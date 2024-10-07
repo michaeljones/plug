@@ -51,7 +51,7 @@ pub fn query_string(conn: Conn) -> Option(String) {
 /// the body directly from the conn, instead it must be given as the
 /// second argument.
 ///
-pub fn conn_to_request(conn: Conn, body: a) -> request.Request(a) {
+pub fn conn_to_request(conn: Conn) -> request.Request(a) {
   request.Request(
     body: body,
     headers: req_headers(conn),

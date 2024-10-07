@@ -63,8 +63,8 @@ defmodule GleamPlug do
   the body directly from the conn, instead it must be given as the
   second argument.
   """
-  def conn_to_request(conn, params) do
-    :gleam@http@plug.conn_to_request(conn, params)
+  def conn_to_request(conn) do
+    :wisp@plug.conn_to_request(conn)
   end
 
   @doc """
@@ -75,22 +75,7 @@ defmodule GleamPlug do
   after this function if you want to halt the plug pipeline.
   """
   def send(response, conn) do
-    :gleam@http@plug.send(response, conn)
-  end
-
-  @doc """
-  Call a Gleam HTTP service for a given Plug connection.
-
-  It is common Plug applications to extract and decode the request
-  body using a middleware so this function does not attempt to read
-  the body directly from the conn, instead it must be given as the
-  second argument.
-  """
-  def call_service(conn, params, service) do
-    conn
-    |> conn_to_request(params)
-    |> service.()
-    |> send(conn)
+    :wisp@plug.send(response, conn)
   end
 
   @doc false
