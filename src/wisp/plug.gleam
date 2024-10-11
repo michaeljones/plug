@@ -1,10 +1,13 @@
+import gleam/bit_array
 import gleam/bytes_builder.{type BytesBuilder}
+import gleam/crypto
 import gleam/dynamic.{type Dynamic}
 import gleam/http
 import gleam/http/request
 import gleam/http/response
 import gleam/option.{type Option, None, Some}
 import gleam/result
+import gleam/string
 import wisp
 import wisp/internal as wisp_internal
 
@@ -55,18 +58,47 @@ pub fn query_string(conn: Conn) -> Option(String) {
 ///
 pub fn conn_to_request(
   conn: Conn,
-  temporary_directory: String,
+  max_body_size: Int,
+  max_files_size: Int,
+  read_chunk_size: Int,
+  base_temporary_directory: String,
   secret_key_base: String,
 ) -> wisp.Request {
+  let temporary_directory = join_path(base_temporary_directory, random_slug())
   request.new()
   |> request.set_body(wisp_internal.Connection(
     reader: body_reader,
-    max_body_size: 8_000_000,
-    max_files_size: 32_000_000,
-    read_chunk_size: 1_000_000,
-    temporary_directory: temporary_directory,
-    secret_key_base: secret_key_base,
+    max_body_size:,
+    max_files_size:,
+    read_chunk_size:,
+    temporary_directory:,
+    secret_key_base:,
   ))
+}
+
+fn join_path(a: String, b: String) -> String {
+  let b = remove_preceeding_slashes(b)
+  case string.ends_with(a, "/") {
+    True -> a <> b
+    False -> a <> "/" <> b
+  }
+}
+
+fn remove_preceeding_slashes(string: String) -> String {
+  case string {
+    "/" <> rest -> remove_preceeding_slashes(rest)
+    _ -> string
+  }
+}
+
+pub fn random_string(length: Int) -> String {
+  crypto.strong_random_bytes(length)
+  |> bit_array.base64_url_encode(False)
+  |> string.slice(0, length)
+}
+
+pub fn random_slug() -> String {
+  random_string(16)
 }
 
 @external(erlang, "Elixir.Plug.Conn", "send_resp")
