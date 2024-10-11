@@ -43,7 +43,7 @@ defmodule GleamPlug.MixProject do
     [
       {:gleam_stdlib, "~> 0.40"},
       {:gleam_http, "~> 3.7"},
-      {:wisp, path: "../wisp"},
+      {:wisp, "~> 1.2"},
       {:plug, "~> 1.10"},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
     ]

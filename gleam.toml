@@ -3,3 +3,4 @@ name = "gleam_plug"
 [dependencies]
 gleam_stdlib = ">= 0.40.0 and < 1.0.0"
 gleam_http = ">= 3.7.0 and < 4.0.0"
+wisp = ">= 1.2.0 and < 2.0.0"

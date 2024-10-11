@@ -5,6 +5,8 @@ import gleam/http/request
 import gleam/http/response
 import gleam/option.{type Option, None, Some}
 import gleam/result
+import wisp
+import wisp/internal as wisp_internal
 
 pub type Conn
 
@@ -51,17 +53,20 @@ pub fn query_string(conn: Conn) -> Option(String) {
 /// the body directly from the conn, instead it must be given as the
 /// second argument.
 ///
-pub fn conn_to_request(conn: Conn) -> request.Request(a) {
-  request.Request(
-    body: body,
-    headers: req_headers(conn),
-    host: host(conn),
-    path: request_path(conn),
-    method: method(conn),
-    port: Some(port(conn)),
-    query: query_string(conn),
-    scheme: scheme(conn),
-  )
+pub fn conn_to_request(
+  conn: Conn,
+  temporary_directory: String,
+  secret_key_base: String,
+) -> wisp.Request {
+  request.new()
+  |> request.set_body(wisp_internal.Connection(
+    reader: body_reader,
+    max_body_size: 8_000_000,
+    max_files_size: 32_000_000,
+    read_chunk_size: 1_000_000,
+    temporary_directory: temporary_directory,
+    secret_key_base: secret_key_base,
+  ))
 }
 
 @external(erlang, "Elixir.Plug.Conn", "send_resp")
