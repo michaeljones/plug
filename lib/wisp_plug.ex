@@ -59,7 +59,7 @@ defmodule WispPlug do
     max_files_size = Keyword.get(options, :max_files_size, 32_000_000)
     read_chunk_size = Keyword.get(options, :read_chunk_size, 1_000_000)
     base_temporary_directory = Keyword.get_lazy(options, :base_temporary_directory, &:wisp@plug.tmp_dir/0)
-    secret_key_base = Keyword.get(options, :secret_key_base )
+    secret_key_base = Keyword.fetch!(options, :secret_key_base)
 
     %{
       handler: handler,
@@ -72,8 +72,9 @@ defmodule WispPlug do
   end
 
   def call(conn, options) do
-    handled = conn
-    |> conn_to_request(
+    handled = 
+    conn_to_request(
+      conn,
       options.max_body_size,
       options.max_files_size,
       options.read_chunk_size,
@@ -82,7 +83,7 @@ defmodule WispPlug do
     )
     # Send IO.inspect through as the logging function as believe that 
     # gleam struggle to log from an elixir set up
-    |> options.handler.()
+    |> options.handler.(&IO.inspect/1)
 
     case handled do
       {:some, response} -> send_response(response, conn)

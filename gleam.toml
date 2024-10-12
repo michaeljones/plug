@@ -1,4 +1,4 @@
-name = "gleam_plug"
+name = "wisp_plug"
 
 [dependencies]
 gleam_stdlib = ">= 0.40.0 and < 1.0.0"

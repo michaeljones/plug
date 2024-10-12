@@ -1,7 +1,7 @@
 defmodule GleamPlug.MixProject do
   use Mix.Project
 
-  @app :gleam_plug
+  @app :wisp_plug
 
   def project do
     [

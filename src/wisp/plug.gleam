@@ -15,16 +15,16 @@ import wisp/internal as wisp_internal
 import wisp/plug/body as wisp_plug_body
 import wisp/plug/conn.{type Conn} as _
 
-@external(erlang, "Elixir.GleamPlug", "port")
+@external(erlang, "Elixir.WispPlug", "port")
 pub fn port(conn: Conn) -> Int
 
-@external(erlang, "Elixir.GleamPlug", "host")
+@external(erlang, "Elixir.WispPlug", "host")
 pub fn host(conn: Conn) -> String
 
-@external(erlang, "Elixir.GleamPlug", "scheme")
+@external(erlang, "Elixir.WispPlug", "scheme")
 pub fn scheme(conn: Conn) -> http.Scheme
 
-@external(erlang, "Elixir.GleamPlug", "method")
+@external(erlang, "Elixir.WispPlug", "method")
 fn elixir_method(conn: Conn) -> Dynamic
 
 pub fn method(conn: Conn) -> http.Method {
@@ -34,13 +34,13 @@ pub fn method(conn: Conn) -> http.Method {
   |> result.unwrap(http.Get)
 }
 
-@external(erlang, "Elixir.GleamPlug", "request_path")
+@external(erlang, "Elixir.WispPlug", "request_path")
 pub fn request_path(conn: Conn) -> String
 
-@external(erlang, "Elixir.GleamPlug", "req_headers")
+@external(erlang, "Elixir.WispPlug", "req_headers")
 pub fn req_headers(conn: Conn) -> List(http.Header)
 
-@external(erlang, "Elixir.GleamPlug", "query_string")
+@external(erlang, "Elixir.WispPlug", "query_string")
 fn elixir_query_string(conn: Conn) -> String
 
 pub fn query_string(conn: Conn) -> Option(String) {
@@ -67,15 +67,23 @@ pub fn conn_to_request(
   secret_key_base: String,
 ) -> wisp.Request {
   let temporary_directory = join_path(base_temporary_directory, random_slug())
-  request.new()
-  |> request.set_body(wisp_internal.Connection(
-    reader: create_body_reader(conn),
-    max_body_size:,
-    max_files_size:,
-    read_chunk_size:,
-    temporary_directory:,
-    secret_key_base:,
-  ))
+  request.Request(
+    headers: req_headers(conn),
+    host: host(conn),
+    path: request_path(conn),
+    method: method(conn),
+    port: Some(port(conn)),
+    query: query_string(conn),
+    scheme: scheme(conn),
+    body: wisp_internal.Connection(
+      reader: create_body_reader(conn),
+      max_body_size:,
+      max_files_size:,
+      read_chunk_size:,
+      temporary_directory:,
+      secret_key_base:,
+    ),
+  )
 }
 
 fn create_body_reader(conn: Conn) -> wisp_internal.Reader {
@@ -137,10 +145,17 @@ fn merge_resp_headers(conn: Conn, headers: List(http.Header)) -> Conn
 /// plugs try to send another response, it will error out. Use the `halt`
 /// function after this function if you want to halt the plug pipeline.
 ///
-pub fn send(response: response.Response(BytesBuilder), conn: Conn) -> Conn {
+pub fn send(response: wisp.Response, conn: Conn) -> Conn {
+  let body = case response.body {
+    wisp.Empty -> bytes_builder.new()
+    wisp.Text(text) -> bytes_builder.from_string_builder(text)
+    wisp.Bytes(bytes) -> bytes
+    wisp.File(path) -> todo
+  }
+
   conn
   |> merge_resp_headers(response.headers)
-  |> send_resp(response.status, response.body)
+  |> send_resp(response.status, body)
 }
 
 /// Halts the Plug pipeline by preventing further plugs downstream from being
