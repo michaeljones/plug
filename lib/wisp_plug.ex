@@ -54,15 +54,15 @@ defmodule WispPlug do
 
   
   def init(options) do
-    handler = Keyword.get(options, :handler)
-    max_body_size = Keyword.get(options, :max_body_size )
-    max_files_size = Keyword.get(options, :max_files_size )
-    read_chunk_size = Keyword.get(options, :read_chunk_size )
-    base_temporary_directory = Keyword.get(options, :base_temporary_directory )
+    handler = Keyword.fetch!(options, :handler)
+    max_body_size = Keyword.get(options, :max_body_size, 8_000_000)
+    max_files_size = Keyword.get(options, :max_files_size, 32_000_000)
+    read_chunk_size = Keyword.get(options, :read_chunk_size, 1_000_000)
+    base_temporary_directory = Keyword.get_lazy(options, :base_temporary_directory, &:wisp@plug.tmp_dir/0)
     secret_key_base = Keyword.get(options, :secret_key_base )
 
     %{
-      handler: handler
+      handler: handler,
       max_body_size: max_body_size,
       max_files_size: max_files_size,
       read_chunk_size: read_chunk_size,
@@ -78,7 +78,7 @@ defmodule WispPlug do
       options.max_files_size,
       options.read_chunk_size,
       options.base_temporary_directory,
-      options.secret_key_base,
+      options.secret_key_base
     )
     # Send IO.inspect through as the logging function as believe that 
     # gleam struggle to log from an elixir set up
@@ -105,7 +105,7 @@ defmodule WispPlug do
     max_files_size,
     read_chunk_size,
     base_temporary_directory,
-    secret_key_base,
+    secret_key_base
     ) do
     :wisp@plug.conn_to_request(
       conn,
@@ -113,7 +113,7 @@ defmodule WispPlug do
       max_files_size,
       read_chunk_size,
       base_temporary_directory,
-      secret_key_base,
+      secret_key_base
     )
   end
 

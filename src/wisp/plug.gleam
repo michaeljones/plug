@@ -1,3 +1,4 @@
+import directories
 import gleam/bit_array
 import gleam/bytes_builder.{type BytesBuilder}
 import gleam/crypto
@@ -11,7 +12,8 @@ import gleam/string
 import wisp
 import wisp/internal as wisp_internal
 
-pub type Conn
+import wisp/plug/body as wisp_plug_body
+import wisp/plug/conn.{type Conn} as _
 
 @external(erlang, "Elixir.GleamPlug", "port")
 pub fn port(conn: Conn) -> Int
@@ -67,13 +69,28 @@ pub fn conn_to_request(
   let temporary_directory = join_path(base_temporary_directory, random_slug())
   request.new()
   |> request.set_body(wisp_internal.Connection(
-    reader: body_reader,
+    reader: create_body_reader(conn),
     max_body_size:,
     max_files_size:,
     read_chunk_size:,
     temporary_directory:,
     secret_key_base:,
   ))
+}
+
+fn create_body_reader(conn: Conn) -> wisp_internal.Reader {
+  fn(length: Int) -> Result(wisp_internal.Read, Nil) {
+    case wisp_plug_body.read(conn, length) {
+      wisp_plug_body.Ok(body, conn) ->
+        case bit_array.byte_size(body) {
+          0 -> Ok(wisp_internal.ReadingFinished)
+          _ -> Ok(wisp_internal.Chunk(body, next: create_body_reader(conn)))
+        }
+      wisp_plug_body.More(partial_body, conn) ->
+        Ok(wisp_internal.Chunk(partial_body, next: create_body_reader(conn)))
+      wisp_plug_body.Error(_reason) -> Error(Nil)
+    }
+  }
 }
 
 fn join_path(a: String, b: String) -> String {
@@ -91,14 +108,21 @@ fn remove_preceeding_slashes(string: String) -> String {
   }
 }
 
-pub fn random_string(length: Int) -> String {
+fn random_string(length: Int) -> String {
   crypto.strong_random_bytes(length)
   |> bit_array.base64_url_encode(False)
   |> string.slice(0, length)
 }
 
-pub fn random_slug() -> String {
+fn random_slug() -> String {
   random_string(16)
+}
+
+pub fn tmp_dir() {
+  case directories.tmp_dir() {
+    Ok(tmp_dir) -> tmp_dir <> "/gleam-wisp/"
+    Error(_) -> "./tmp/"
+  }
 }
 
 @external(erlang, "Elixir.Plug.Conn", "send_resp")
